@@ -8,12 +8,21 @@ public class QuestionManager : MonoBehaviour {
     public int numAnswers = 5;
 
     public Question GetQuestion() {
-        var word = thesaurus.GetRandomWordEn();
+        string word, correctWord;
+        do {
+            word = thesaurus.GetRandomWordEn();
+            correctWord = thesaurus.GetRandomTranslationEn(word);
+        } while (word == correctWord);//skip over the very easy ones.
+
         var answers = new List<string>();
         for (var i = 0; i < numAnswers - 1; i++) {
-            answers.Add(thesaurus.GetRandomWordFr());
+            var answer = thesaurus.GetRandomWordFr();
+            if (answer == correctWord) {
+                i--;
+                continue;
+            }
+            answers.Add(answer);
         }
-        var correctWord = thesaurus.GetRandomTranslationEn(word);
         var correct = UnityEngine.Random.Range(0, numAnswers);
         answers.Insert(correct, correctWord);
 

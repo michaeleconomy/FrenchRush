@@ -25,6 +25,8 @@ public class Thesaurus : MonoBehaviour {
     }
 
     private Regex mfMarker = new Regex(@" \{[mf](.pl)?\}");
+    private Regex angleMarker = new Regex(@" \<[^>]+\>");
+    private Regex squareBrackets = new Regex(@" \[[^\]]+\]");
 
     private void ProcessLine(string line) {
         if (line.StartsWith("#")) {
@@ -37,9 +39,33 @@ public class Thesaurus : MonoBehaviour {
         var english = cols[0];
         var french = cols[1];
         //var partOfSpeech = cols[2];
-        //var tags = cols[3];
-        french = mfMarker.Replace(french, "");
+        var tags = cols[3];
+        if (tags.Contains("[zool.]") || tags.Contains("[orn.]")) {
+            english = squareBrackets.Replace(english, "");
+            french = squareBrackets.Replace(french, "");
+        }
 
+        english = angleMarker.Replace(english, "");
+        english = english.Replace(" {pl}", "");
+        english = english.Replace(" [Am.]", "");
+        english = english.Replace(" [Br.]", "");
+        english = english.Replace(" [coll.]", "");
+        english = english.Replace(" [no pl]", "");
+        english = english.Replace(" [also fig.]", "");
+        english = english.Replace(" [fig.]", "");
+        english = english.Replace(" [pej.]", "");
+        english = english.Replace(" {sg}", "");
+        english = english.Replace("[", "<i>").Replace("]", "</i>");
+        english = english.Replace("sb.", "<i>someone</i>");
+        english = english.Replace("sth.", "<i>something</i>");
+        french = mfMarker.Replace(french, "");
+        french = angleMarker.Replace(french, "");
+        french = french.Replace(" [fam.]", "");
+        french = french.Replace(" [can.]", "");
+        french = french.Replace(" [pej.]", "");
+        french = french.Replace("[", "<i>").Replace("]", "</i>");
+        french = french.Replace("qn.", "<i>quelqu'un</i>");
+        french = french.Replace("qc.", "<i>quelque chose</i>");
         HashSet<string> set;
         if (en2fr.TryGetValue(english, out set)) {
             set.Add(french);

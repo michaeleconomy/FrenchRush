@@ -123,8 +123,8 @@ public class GamePanel : MonoBehaviour {
     }
 
     private IEnumerator GetQuestionAfterPause() {
-        yield return new WaitForSeconds(3);
         timeLeft += 5;
+        yield return new WaitForSeconds(3);
         timeLeftText.text = timeLeft.ToString();
         GetQuestion();
     }

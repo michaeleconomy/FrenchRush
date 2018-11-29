@@ -11,7 +11,7 @@ public class GamePanel : MonoBehaviour {
     private int score;
     private int correct;
     public int lives;
-    private bool gameEnded = false;
+    private bool gameEnded = true;
 
     private Question question;
 
@@ -26,27 +26,41 @@ public class GamePanel : MonoBehaviour {
     public Transform answers;
     public Button answerPrefab;
 
+    public MainMenu mainMenu;
     public GameEndPanel gameEndPanel;
-    public GameObject timesUpPanel;
     public QuestionManager questionManager;
     public Thesaurus thesaurus;
-
 
     void Start() {
         InvokeRepeating("CheckTimer", 1, 1);
     }
 
     public void StartNewGame() {
+        if (!gameEnded) {
+            return;
+        }
         gameEnded = false;
         gameEndPanel.gameObject.SetActive(false);
         timeLeft = timeLimit;
+        timeLeftText.text = timeLeft.ToString();
         lives = maxLives;
         score = 0;
         scoreText.text = score.ToString();
         correct = 0;
+        timeLeftText.color = Color.black;
         UpdateLifeImages();
         GetQuestion();
         gameObject.SetActive(true);
+        var animator = GetComponent<Animator>();
+        animator.Play("Appear");
+
+        var mainMenuAnimator = mainMenu.GetComponent<Animator>();
+        mainMenuAnimator.Play("Disappear");
+
+        if (gameEndPanel.gameObject.activeSelf) {
+            var gameEndPanelAnimator = gameEndPanel.GetComponent<Animator>();
+            gameEndPanelAnimator.Play("Disappear");
+        }
     }
 
     private void GetQuestion() {
@@ -80,16 +94,20 @@ public class GamePanel : MonoBehaviour {
             StartCoroutine(GetQuestionAfterPause());
             return;
         }
+
+        var animator = GetComponent<Animator>();
+        animator.Play("Shake");
         lives--;
         ShowTranslation(index);
         buttonImage.color = Color.red;
         UpdateLifeImages();
         if (lives == 0) {
-            EndGame();
+            StartCoroutine(EndGame("Out of Hearts/Hors Des Coeurs!"));
         }
     }
 
     private void ShowTranslations() {
+        wordText.text += " - " + question.answers[question.correct];
         for (var i = 0; i < answers.childCount; i++) {
             ShowTranslation(i);
         }
@@ -99,12 +117,15 @@ public class GamePanel : MonoBehaviour {
         var answerString = question.answers[index];
         var buttonTransform = answers.GetChild(index);
         var text = buttonTransform.GetComponentInChildren<Text>();
-        var translation = thesaurus.GetRandomTranslationFr(answerString);
-        text.text = answers + " - " + translation;
+        var translation = index == question.correct ? question.question :
+            thesaurus.GetRandomTranslationFr(answerString);
+        text.text = answerString + " - " + translation;
     }
 
     private IEnumerator GetQuestionAfterPause() {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(3);
+        timeLeft += 5;
+        timeLeftText.text = timeLeft.ToString();
         GetQuestion();
     }
 
@@ -116,28 +137,35 @@ public class GamePanel : MonoBehaviour {
     }
 
     private void CheckTimer() {
-        if (timeLeft <= 0) {
+        if (gameEnded) {
             return;
         }
         timeLeft--;
         timeLeftText.text = timeLeft.ToString();
+        if (timeLeft == 10) {
+            timeLeftText.color = new Color(1f, 0.65f, 0f); //orange
+        }
+
+        if (timeLeft == 5) {
+            timeLeftText.color = Color.red;
+        }
 
         if (timeLeft <= 0) {
-            StartCoroutine(DisplayTimesUp());
-            EndGame();
+            StartCoroutine(EndGame("Time's up/Le temps st écoulé!"));
         }
     }
 
-    private IEnumerator DisplayTimesUp() {
-        timesUpPanel.SetActive(true);
-        yield return new WaitForSeconds(2);
-        timesUpPanel.SetActive(false);
-    }
-
-    private void EndGame() {
-        if (!gameEnded) {
-            gameEnded = true;
-            gameEndPanel.Show(lives, correct);
+    private IEnumerator EndGame(string reason) {
+        if(gameEnded) {
+            yield break;
         }
+        gameEnded = true;
+        timeLeftText.text = reason;
+        score += lives * ScoreManager.pointsPerLife;
+        scoreText.text = score.ToString();
+        timeLeftText.color = Color.red;
+        ShowTranslations();
+        yield return new WaitForSeconds(3f);
+        gameEndPanel.Show(lives, correct);
     }
 }

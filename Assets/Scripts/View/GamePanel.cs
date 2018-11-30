@@ -30,6 +30,9 @@ public class GamePanel : MonoBehaviour {
     public GameEndPanel gameEndPanel;
     public QuestionManager questionManager;
     public Thesaurus thesaurus;
+    public SoundPlayer soundPlayer;
+    public TickTockPlayer tickTockPlayer;
+
 
     void Start() {
         InvokeRepeating("CheckTimer", 1, 1);
@@ -53,6 +56,7 @@ public class GamePanel : MonoBehaviour {
         gameObject.SetActive(true);
         var animator = GetComponent<Animator>();
         animator.Play("Appear");
+        soundPlayer.PlayStart();
 
         var mainMenuAnimator = mainMenu.GetComponent<Animator>();
         mainMenuAnimator.Play("Disappear");
@@ -84,17 +88,18 @@ public class GamePanel : MonoBehaviour {
         var buttonTransform = answers.GetChild(index);
         var button = buttonTransform.GetComponent<Button>();
         button.onClick.RemoveAllListeners();
-        var buttonImage = buttonTransform.GetComponent<Image>();
         if (index == question.correct) {
             ShowTranslations();
-            buttonImage.color = Color.green;
             correct++;
             score += 10;
             scoreText.text = score.ToString();
+            soundPlayer.PlayCorrect();
             StartCoroutine(GetQuestionAfterPause());
             return;
         }
 
+        soundPlayer.PlayWrong();
+        var buttonImage = buttonTransform.GetComponent<Image>();
         var animator = GetComponent<Animator>();
         animator.Play("Shake");
         lives--;
@@ -117,7 +122,12 @@ public class GamePanel : MonoBehaviour {
         var answerString = question.answers[index];
         var buttonTransform = answers.GetChild(index);
         var text = buttonTransform.GetComponentInChildren<Text>();
-        var translation = index == question.correct ? question.question :
+        var isCorrect = index == question.correct;
+        if(isCorrect) {
+            var buttonImage = buttonTransform.GetComponent<Image>();
+            buttonImage.color = Color.green;
+        }
+        var translation = isCorrect ? question.question :
             thesaurus.GetRandomTranslationFr(answerString);
         text.text = answerString + " - " + translation;
     }
@@ -136,6 +146,8 @@ public class GamePanel : MonoBehaviour {
         }
     }
 
+
+    private bool playTock = false;
     private void CheckTimer() {
         if (gameEnded) {
             return;
@@ -149,6 +161,14 @@ public class GamePanel : MonoBehaviour {
         if (timeLeft == 5) {
             timeLeftText.color = Color.red;
         }
+
+        if (playTock) {
+            tickTockPlayer.PlayTock();
+        }
+        else {
+            tickTockPlayer.PlayTick();
+        }
+        playTock = !playTock;
 
         if (timeLeft <= 0) {
             StartCoroutine(EndGame("Time's up/Le temps st écoulé!"));
@@ -165,6 +185,7 @@ public class GamePanel : MonoBehaviour {
         scoreText.text = score.ToString();
         timeLeftText.color = Color.red;
         ShowTranslations();
+        soundPlayer.PlayTimeUp();
         yield return new WaitForSeconds(3f);
         gameEndPanel.Show(lives, correct);
     }

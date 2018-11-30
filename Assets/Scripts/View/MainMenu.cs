@@ -16,4 +16,8 @@ public class MainMenu : MonoBehaviour {
     public void ThesaurusLink() {
         Application.OpenURL("https://www.dict.cc/");
     }
+
+    public void Styrognome() {
+        Application.OpenURL("http://www.styrognome.com");
+    }
 }
